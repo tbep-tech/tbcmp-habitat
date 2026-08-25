@@ -1110,41 +1110,70 @@ fetch_fnai <- function(
 
 #' Fetch Florida DEP Aquatic Preserves clipped to a county boundary
 #'
-#' Downloads the statewide Aquatic Preserves GeoJSON from the Florida DEP
-#' ArcGIS service, routes it through \code{gdal_utils} vectortranslate to
-#' linearize any curve geometries, then clips to \code{cnt}.
+#' Downloads the statewide Aquatic Preserves layer from the Florida DEP
+#' Open Data Portal ArcGIS REST feature service, paging the query so a few
+#' very large individual preserve geometries don't push a single request over
+#' the service's response size limit (which fails with an HTTP 500 rather
+#' than a paging-related error). Each page is routed through
+#' \code{gdal_utils} vectortranslate to linearize any curve geometries, and
+#' pages are combined before clipping to \code{cnt}.
 #'
 #' @param cnt An \code{sf} object defining the clipping boundary.
-#' @param url Character. GeoJSON endpoint URL.
+#' @param base_url Character. ArcGIS REST feature layer URL (no \code{/query}).
 #' @param crs Integer EPSG code for the output CRS. Default \code{3087L}.
+#' @param page_size Integer. Records requested per page. Default \code{10L};
+#'   larger pages risk a server-side 500 due to response size.
 #'
 #' @return An \code{sf} object clipped to \code{cnt} in \code{crs}.
 
 fetch_aqprs <- function(
   cnt,
-  url = 'https://geodata.dep.state.fl.us/datasets/81841412d3984e9aac2c00c21e41d32e_0.geojson',
-  crs = 3087L
+  base_url = 'https://castg.dep.state.fl.us/arcgis/rest/services/OpenData/AQUATIC_PRESERVES/MapServer/0',
+  crs = 3087L,
+  page_size = 10L
 ) {
-  tmp <- tempfile(fileext = '.gpkg')
-  on.exit(unlink(tmp), add = TRUE)
+  count_resp <- httr2::request(base_url) |>
+    httr2::req_url_path_append('query') |>
+    httr2::req_url_query(where = '1=1', returnCountOnly = 'true', f = 'json') |>
+    httr2::req_perform()
+  n <- httr2::resp_body_json(count_resp)$count
 
-  sf::gdal_utils(
-    util = 'vectortranslate',
-    source = url,
-    destination = tmp,
-    options = c(
-      '-nlt',
-      'PROMOTE_TO_MULTI',
-      '-nlt',
-      'CONVERT_TO_LINEAR',
-      '-f',
-      'GPKG',
-      '-lco',
-      'SPATIAL_INDEX=NO'
+  offsets <- seq(0, n - 1, by = page_size)
+
+  pages <- lapply(offsets, function(off) {
+    url <- (httr2::request(base_url) |>
+      httr2::req_url_path_append('query') |>
+      httr2::req_url_query(
+        where = '1=1',
+        outFields = '*',
+        f = 'geojson',
+        resultOffset = off,
+        resultRecordCount = page_size
+      ))$url
+
+    tmp <- tempfile(fileext = '.gpkg')
+    on.exit(unlink(tmp), add = TRUE)
+
+    sf::gdal_utils(
+      util = 'vectortranslate',
+      source = url,
+      destination = tmp,
+      options = c(
+        '-nlt',
+        'PROMOTE_TO_MULTI',
+        '-nlt',
+        'CONVERT_TO_LINEAR',
+        '-f',
+        'GPKG',
+        '-lco',
+        'SPATIAL_INDEX=NO'
+      )
     )
-  )
 
-  sf::st_read(tmp, quiet = TRUE) |>
+    sf::st_read(tmp, quiet = TRUE)
+  })
+
+  do.call(rbind, pages) |>
     sf::st_transform(crs) |>
     sf::st_make_valid() |>
     sf::st_buffer(dist = 0) |>

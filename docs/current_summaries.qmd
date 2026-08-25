@@ -1,0 +1,82 @@
+# Current Summaries {.unnumbered}
+
+```{r}
+#| include: false
+library(here)
+library(flextable)
+library(dplyr)
+
+i_am('docs/03_current_summaries.qmd')
+
+source(here("R", "funcs.R"))
+
+load(file = here('data', '01_inputs', 'strata.RData'))
+
+load(
+  file = here("data", "03_current_summaries", "current_summary_citrus.RData")
+)
+load(
+  file = here("data", "03_current_summaries", "current_summary_hernando.RData")
+)
+load(
+  file = here(
+    "data",
+    "03_current_summaries",
+    "current_summary_hillsborough.RData"
+  )
+)
+load(
+  file = here("data", "03_current_summaries", "current_summary_manatee.RData")
+)
+load(file = here("data", "03_current_summaries", "current_summary_pasco.RData"))
+load(
+  file = here("data", "03_current_summaries", "current_summary_pinellas.RData")
+)
+load(
+  file = here("data", "03_current_summaries", "current_summary_sarasota.RData")
+)
+```
+
+::: {.panel-tabset .nav-pills}
+
+## Citrus
+
+```{r}
+curextab_fun(current_summary_citrus, "Citrus", strata)
+```
+
+## Hernando
+
+```{r}
+curextab_fun(current_summary_hernando, "Hernando", strata)
+```
+
+## Hillsborough
+
+```{r}
+curextab_fun(current_summary_hillsborough, "Hillsborough", strata)
+```
+
+## Manatee
+
+```{r}
+curextab_fun(current_summary_manatee, "Manatee", strata)
+```
+
+## Pasco
+```{r}
+curextab_fun(current_summary_pasco, "Pasco", strata)
+```
+
+## Pinellas
+```{r}
+curextab_fun(current_summary_pinellas, "Pinellas", strata)
+```
+
+## Sarasota
+
+```{r}
+curextab_fun(current_summary_sarasota, "Sarasota", strata)
+```
+
+:::

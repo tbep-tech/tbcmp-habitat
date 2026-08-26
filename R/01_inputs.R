@@ -555,3 +555,69 @@ leaflet() |>
     overlayGroups = c('co1', 'co2', 'Counties'),
     options = layersControlOptions(collapsed = FALSE)
   )
+
+# current vulnerability (max scenario) -------------------------------------
+
+# Source: T:/05_GIS/TBEP/TBCMP/GIS_MAPS/HABITAT_VULNERABILITY/
+#   tbcmp_hot_spot_maps_1-2_max.tif, copied to data-raw/01_inputs/. Combined
+# existing/future vulnerability hot spot raster (10m, EPSG:3087), max across
+# scenarios.
+
+load(file = here('data', '01_inputs', 'tbcmp_cnt.RData'))
+
+vuln_max <- rast(
+  here('data-raw', '01_inputs', 'tbcmp_hot_spot_maps_1-2_max.tif')
+)
+
+vuln_thresh <- 0.45
+
+for (county in tbcmp_cnt$county) {
+  county_lower <- tolower(county)
+  obj_name <- paste0('vuln_max_', county_lower)
+
+  cnt_geom <- vect(tbcmp_cnt[tbcmp_cnt$county == county, ])
+  r <- crop(vuln_max, cnt_geom) |> mask(cnt_geom)
+
+  # keep only cells >= threshold, omit the rest, then vectorize to a single
+  # (multi-part) polygon of the high-vulnerability zone
+  r_bin <- ifel(r >= vuln_thresh, 1, NA)
+
+  out <- as.polygons(r_bin, dissolve = TRUE) |>
+    sf::st_as_sf() |>
+    sf::st_transform(prj) |>
+    sf::st_make_valid() |>
+    dplyr::mutate(vuln_thresh = vuln_thresh) |>
+    dplyr::select(vuln_thresh)
+
+  assign(obj_name, out)
+  save(
+    list = obj_name,
+    file = here('data', '01_inputs', paste0(obj_name, '.RData')),
+    compress = 'xz'
+  )
+}
+
+# check county vulnerability
+load(file = here('data', '01_inputs', 'vuln_max_pinellas.RData'))
+vuln_max_pinellas_4326 <- st_transform(vuln_max_pinellas, 4326)
+
+leaflet() |>
+  addProviderTiles(providers$Esri.WorldGrayCanvas) |>
+  addPolygons(
+    data = vuln_max_pinellas_4326,
+    fillColor = 'red',
+    fillOpacity = 0.6,
+    color = NA,
+    group = 'Vulnerability (>= 0.45)'
+  ) |>
+  addPolygons(
+    data = st_transform(tbcmp_cnt[tbcmp_cnt$county == 'Pinellas', ], 4326),
+    fillOpacity = 0,
+    color = 'black',
+    weight = 1.5,
+    group = 'Counties'
+  ) |>
+  addLayersControl(
+    overlayGroups = c('Vulnerability (>= 0.45)', 'Counties'),
+    options = layersControlOptions(collapsed = FALSE)
+  )

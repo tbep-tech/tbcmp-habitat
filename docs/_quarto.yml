@@ -20,24 +20,12 @@ book:
         - oppmap_pasco.qmd
         - oppmap_pinellas.qmd
         - oppmap_sarasota.qmd
-    - part: "County Restoration Potential Maps"
-      chapters:
-        - restmap_citrus.qmd
-        - restmap_hernando.qmd
-        - restmap_hillsborough.qmd
-        - restmap_manatee.qmd
-        - restmap_pasco.qmd
-        - restmap_pinellas.qmd
-        - restmap_sarasota.qmd
-
-
     - part: "Steps"
       chapters:
         - 01_inputs.qmd
         - 02_current_layers.qmd
         - 03_current_summaries.qmd
         - 04_opportunities_maps.qmd
-        - 05_restoration_maps.qmd
 
 bibliography: refs.bib
 link-citations: true

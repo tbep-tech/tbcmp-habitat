@@ -12,13 +12,3 @@ Opportunity areas for each county can be downloaded [here](https://github.com/tb
 | Existing Conservation Restorable | Restorable land within existing conservation lands |
 | Proposed Conservation Native | Native habitat within proposed conservation lands |
 | Proposed Conservation Restorable | Restorable land within proposed conservation lands |
-<br>
-
-Restoration potentials for each county can be downloaded [here](https://github.com/tbep-tech/tbcmp-opportunities/raw/refs/heads/main/data/05_restoration_maps/restmap_shp.zip) and are defined as follows:
-
-| Category | Description |
-|---|---|
-| Coastal Uplands | Restorable upland habitat within the coastal stratum |
-| Freshwater Wetlands | Restorable wetland habitat outside the coastal stratum |
-| Native Uplands | Restorable upland habitat outside the coastal stratum |
-| Tidal Wetlands | Restorable tidal habitat (Mangrove Forests/Salt Barrens and Salt Marshes combined) |

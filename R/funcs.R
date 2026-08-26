@@ -1626,10 +1626,10 @@ add_coast_up <- function(lulcin, coastal, fluccs) {
   dplyr::bind_rows(lulcdiff, coastal_uplands)
 }
 
-#' Build the four current-condition layers for one county
+#' Build the current-condition layers for one county
 #'
 #' Clips the county-wide shared input layers to the specified county boundary,
-#' then produces the four spatial outputs used in the TBCMP opportunity analysis:
+#' then produces the two spatial outputs used in the TBCMP opportunity analysis:
 #'
 #' \describe{
 #'   \item{\code{nativelyr}}{Existing and proposed conservation lands
@@ -1639,15 +1639,12 @@ add_coast_up <- function(lulcin, coastal, fluccs) {
 #'     sub-categories (Native Uplands, Coastal Uplands, Freshwater Wetlands,
 #'     Mangrove Forests/Salt Barrens, Salt Marshes) based on soil type, coastal
 #'     stratum position, and salinity zone.}
-#'   \item{\code{nativersrv}}{Bare \code{sfc}: native habitats in the coastal
-#'     stratum that are proposed for conservation or currently unprotected.}
-#'   \item{\code{restorersrv}}{Bare \code{sfc}: restorable lands in the coastal
-#'     stratum that are proposed for conservation or currently unprotected.}
 #' }
 #'
 #' @param lulc             \code{sf}. County LULC layer with a \code{FLUCCSCODE} column.
 #' @param coastal_stratum  \code{sf}. Full study-area coastal stratum; clipped to
-#'   \code{county} internally.
+#'   \code{county} internally. Used to distinguish Coastal Uplands from Native
+#'   Uplands and tidal from Freshwater Wetlands in habitat classification.
 #' @param soils            \code{sf}. Full study-area soils layer with \code{gridcode}
 #'   column (100 = Xeric, 200/300 = Mesic/Hydric); clipped to \code{county} internally.
 #' @param salinity_layer   \code{sf}. Full study-area salinity layer with \code{Descrip}
@@ -1662,8 +1659,7 @@ add_coast_up <- function(lulcin, coastal, fluccs) {
 #'   column, used to derive the clipping boundary.
 #' @param county           Character. County name matching a value in \code{tbcmp_cnt$county}.
 #'
-#' @return A named list with elements \code{nativelyr}, \code{restorelyr},
-#'   \code{nativersrv}, and \code{restorersrv}.
+#' @return A named list with elements \code{nativelyr} and \code{restorelyr}.
 
 build_current_lyrs <- function(
   lulc,
@@ -1759,41 +1755,9 @@ build_current_lyrs <- function(
     )
   }
 
-  # Reservation layers: coastal stratum features proposed or unprotected
-  uniexstall <- exstall |> sf::st_union() |> sf::st_make_valid()
-
-  nativersrv <- nativelyr |>
-    dplyr::filter(typ == 'Proposed') |>
-    sf::st_intersection(coastal_geom) |>
-    fixgeo()
-
-  restorersrv <- restorelyr |>
-    dplyr::filter(typ == 'Proposed') |>
-    sf::st_intersection(coastal_geom) |>
-    fixgeo()
-
-  nativeunpro <- lulc_prep |>
-    dplyr::filter(Habitat != 'Restorable') |>
-    sf::st_intersection(coastal_geom) |>
-    fixgeo() |>
-    sf::st_difference(uniexstall) |>
-    fixgeo()
-
-  restoreunpro <- lulc_prep |>
-    dplyr::filter(Habitat == 'Restorable') |>
-    sf::st_intersection(coastal_geom) |>
-    fixgeo() |>
-    sf::st_difference(uniexstall) |>
-    fixgeo()
-
-  restorersrv <- c(sf::st_make_valid(restorersrv), restoreunpro) |> fixgeo()
-  nativersrv <- c(sf::st_make_valid(nativersrv), nativeunpro) |> fixgeo()
-
   list(
     nativelyr = nativelyr,
-    restorelyr = restorelyr,
-    nativersrv = nativersrv,
-    restorersrv = restorersrv
+    restorelyr = restorelyr
   )
 }
 

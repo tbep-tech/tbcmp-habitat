@@ -2,20 +2,16 @@
 title: "Current Layers"
 ---
 
-This step builds four current-condition spatial layers for each of the seven TBCMP counties using the input layers from Step 1. All processing is implemented in `R/funcs.R` and executed in `R/02_current_layers.R`.
+This step builds two current-condition spatial layers for each of the seven TBCMP counties using the input layers from Step 1. All processing is implemented in `R/funcs.R` and executed in `R/02_current_layers.R`.
 
 ## Overview
 
-For each county, four layers are produced that together characterize the current state of the coastal landscape in terms of habitat type, protection status, and restoration potential:
+For each county, two layers are produced that together characterize the current state of the coastal landscape in terms of habitat type, protection status, and restoration potential:
 
 | Layer | Description |
 |---|---|
 | `nativelyr` | Native (non-restorable) habitats within existing or proposed conservation lands |
 | `restorelyr` | Restorable lands within existing or proposed conservation, sub-classified by habitat type |
-| `nativersrv` | Native habitats in the coastal stratum that are proposed for conservation or currently unprotected |
-| `restorersrv` | Restorable lands in the coastal stratum that are proposed for conservation or currently unprotected |
-
-The native and restorable layers describe what is already within conservation boundaries. The reservation layers (`nativersrv`, `restorersrv`) describe what lies in the coastal stratum and is either proposed for future conservation or is currently unprotected — these represent the primary opportunity space for the analysis.
 
 ## Input Layers
 
@@ -38,7 +34,7 @@ Land use/land cover (LULC) is loaded separately for each county within the proce
 The script loops over all seven counties in `tbcmp_cnt`. For each county, the following steps are performed:
 
 1. Load the county LULC layer (`lulc_<county>.RData`)
-2. Call `build_current_lyrs()` to produce the four output layers
+2. Call `build_current_lyrs()` to produce the two output layers
 3. Save each layer as `<layer>_<county>.RData` in `data/02_current_layers/`
 
 The county-wide shared layers (`coastal_stratum`, `soils`, `salinity_layer`, `prop`, `exst`) are passed in full and clipped to the county boundary inside `build_current_lyrs()`. This keeps the loop clean and ensures the clipping logic is encapsulated with the function that uses it.
@@ -107,18 +103,6 @@ Restorable land
         └── All other salinity  →  Mangrove Forests/Salt Barrens
 ```
 
-## Reservation Layers
-
-`nativersrv` and `restorersrv` identify the coastal opportunity space — areas that are either already proposed for conservation or are currently unprotected within the coastal stratum.
-
-Both layers are built by taking the relevant features from `nativelyr` or `restorelyr` (filtered to `typ == "Proposed"`), intersecting with the coastal stratum, then unioning with the corresponding unprotected coastal features. Unprotected features are defined as coastal stratum land that is not within `exst` (existing conservation), derived directly from the LULC layer (native or restorable, respectively).
-
-In other words, for each layer:
-
-$$\text{reservation} = (\text{proposed conservation} \cap \text{coastal stratum}) \cup (\text{unprotected} \cap \text{coastal stratum})$$
-
-These layers represent the total coastal area available for conservation action, either by securing proposed acquisitions or by identifying currently unprotected coastal habitat.
-
 ## Output Files
 
 All output files are written to `data/02_current_layers/`. Each layer is saved with a county suffix:
@@ -127,10 +111,6 @@ All output files are written to `data/02_current_layers/`. Each layer is saved w
 |---|---|---|
 | `nativelyr_<county>.RData` | `nativelyr_<county>` | `sf` POLYGON, columns: `Habitat`, `typ` |
 | `restorelyr_<county>.RData` | `restorelyr_<county>` | `sf` POLYGON, columns: `Habitat`, `typ` |
-| `nativersrv_<county>.RData` | `nativersrv_<county>` | `sfc_POLYGON` (bare geometry) |
-| `restorersrv_<county>.RData` | `restorersrv_<county>` | `sfc_POLYGON` (bare geometry) |
-
-The reservation layers (`nativersrv`, `restorersrv`) are stored as bare `sfc` geometry objects without attribute columns, as they are used purely as spatial masks in downstream analysis.
 
 ## Key Functions
 

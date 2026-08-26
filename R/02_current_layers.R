@@ -59,7 +59,7 @@ cmp1 <- st_transform(restorelyr, 4326)
 cmp2 <- st_transform(restorelyr_hillsborough, 4326)
 
 leaflet() |>
-  addProviderTiles(providers$CartoDB.Positron) |>
+  addProviderTiles(providers$Esri.WorldGrayCanvas) |>
   addPolygons(
     data = cmp1,
     fillOpacity = 0.6,

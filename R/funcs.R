@@ -2208,7 +2208,7 @@ oppmap_leaflet <- function(oppdat, county, tbcmp_cnt, simplify = NULL) {
     dplyr::filter(county == !!county)
 
   m <- leaflet::leaflet() |>
-    leaflet::addProviderTiles(leaflet::providers$CartoDB.Positron)
+    leaflet::addProviderTiles(leaflet::providers$Esri.WorldGrayCanvas)
 
   for (cat_nm in names(cols)) {
     cat_data <- dplyr::filter(oppdat_4326, cat == cat_nm)

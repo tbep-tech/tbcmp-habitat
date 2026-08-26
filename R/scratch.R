@@ -12,7 +12,7 @@ load(file = '~/Desktop/sg1.RData')
 load(file = '~/Desktop/sg2.RData')
 
 leaflet() |>
-  addProviderTiles(providers$CartoDB.Positron) |>
+  addProviderTiles(providers$Esri.WorldGrayCanvas) |>
   addPolygons(
     data = sg1,
     fillOpacity = 0.6,

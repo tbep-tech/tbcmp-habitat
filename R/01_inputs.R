@@ -153,7 +153,7 @@ load(file = here('data', '01_inputs', 'coastal_stratum.RData'))
 coastal_stratum_4326 <- st_transform(coastal_stratum, 4326)
 
 leaflet() |>
-  addProviderTiles(providers$CartoDB.Positron) |>
+  addProviderTiles(providers$Esri.WorldGrayCanvas) |>
   addPolygons(
     data = coastal_4326,
     color = "blue",
@@ -200,7 +200,7 @@ sal_pal <- colorFactor(
 )
 
 leaflet() |>
-  addProviderTiles(providers$CartoDB.Positron) |>
+  addProviderTiles(providers$Esri.WorldGrayCanvas) |>
   addPolygons(
     data = salinity_layer_4326,
     fillColor = ~ sal_pal(Descrip),
@@ -267,7 +267,7 @@ soil_pal <- colorFactor(
 )
 
 leaflet() |>
-  # addProviderTiles(providers$CartoDB.Positron) |>
+  # addProviderTiles(providers$Esri.WorldGrayCanvas) |>
   addPolygons(
     data = soils_tb,
     color = ~ soil_pal(gridcode),
@@ -381,7 +381,7 @@ clip_pal <- colorFactor(
 )
 
 leaflet() |>
-  addProviderTiles(providers$CartoDB.Positron) |>
+  addProviderTiles(providers$Esri.WorldGrayCanvas) |>
   addPolygons(
     data = clip_4326,
     fillColor = ~ clip_pal(priority),
@@ -433,7 +433,7 @@ load(file = here('data', '01_inputs', 'prop.RData'))
 newprop <- st_transform(prop, 4326)
 
 leaflet() |>
-  addProviderTiles(providers$CartoDB.Positron) |>
+  addProviderTiles(providers$Esri.WorldGrayCanvas) |>
   addPolygons(
     data = oldprop,
     fillOpacity = 0.6,
@@ -482,7 +482,7 @@ lulc_pinellas_4326 <- st_transform(lulc_pinellas, 4326)
 lulc_hillsborough_4326 <- st_transform(lulc_hillsborough, 4326)
 
 leaflet() |>
-  addProviderTiles(providers$CartoDB.Positron) |>
+  addProviderTiles(providers$Esri.WorldGrayCanvas) |>
   addPolygons(
     data = lulc_pinellas_4326,
     fillOpacity = 0.6,
@@ -526,7 +526,7 @@ co1_4326 <- st_transform(seagrass_manatee, 4326)
 co2_4326 <- st_transform(seagrass_sarasota, 4326)
 
 leaflet() |>
-  addProviderTiles(providers$CartoDB.Positron) |>
+  addProviderTiles(providers$Esri.WorldGrayCanvas) |>
   addPolygons(
     data = co1_4326,
     fillOpacity = 0.6,

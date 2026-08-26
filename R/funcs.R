@@ -2109,68 +2109,29 @@ curextab_fun <- function(allsum, county, strata) {
 
 #' Build the opportunity layer for one county
 #'
-#' Clips the coastal stratum to the specified county, then combines the four
-#' current-condition layers into a single \code{sf} object with a \code{cat}
-#' column distinguishing six opportunity categories:
+#' Combines the two current-condition layers into a single \code{sf} object
+#' with a \code{cat} column distinguishing four opportunity categories:
 #'
 #' \itemize{
-#'   \item \code{Reservation Native} — native habitats in the coastal stratum
-#'     that are proposed for conservation or currently unprotected
-#'   \item \code{Reservation Restorable} — restorable lands in the coastal
-#'     stratum that are proposed for conservation or currently unprotected
 #'   \item \code{Existing Conservation Native} — native habitats within
 #'     existing conservation lands
 #'   \item \code{Proposed Conservation Native} — native habitats within
-#'     proposed conservation lands outside the coastal stratum
+#'     proposed conservation lands
 #'   \item \code{Existing Conservation Restorable} — restorable lands within
 #'     existing conservation lands
 #'   \item \code{Proposed Conservation Restorable} — restorable lands within
-#'     proposed conservation lands outside the coastal stratum
+#'     proposed conservation lands
 #' }
 #'
-#' Proposed conservation features that overlap the coastal stratum are removed
-#' via \code{sf::st_difference()} to avoid double-counting with the reservation
-#' layers.
-#'
-#' @param nativersrv      \code{sfc}. Native habitats in the coastal reservation
-#'   space, as returned by \code{build_current_lyrs()}.
-#' @param restorersrv     \code{sfc}. Restorable lands in the coastal reservation
-#'   space, as returned by \code{build_current_lyrs()}.
 #' @param nativelyr       \code{sf}. Native habitats in conservation lands, with
 #'   a \code{typ} column (\code{"Existing"} / \code{"Proposed"}).
 #' @param restorelyr      \code{sf}. Restorable lands in conservation lands, with
 #'   a \code{typ} column.
-#' @param coastal_stratum \code{sf}. Full study-area coastal stratum; clipped to
-#'   \code{county} internally.
-#' @param tbcmp_cnt       \code{sf} polygon with one row per county and a
-#'   \code{county} column.
-#' @param county          Character. County name matching a value in
-#'   \code{tbcmp_cnt$county}.
 #'
 #' @return An \code{sf} POLYGON object with a single \code{cat} column
 #'   identifying the opportunity category.
 
-oppdat_fun <- function(
-  nativersrv,
-  restorersrv,
-  nativelyr,
-  restorelyr,
-  coastal_stratum,
-  tbcmp_cnt,
-  county
-) {
-  # Clip coastal stratum to county and union for differencing
-  cnt_geom <- sf::st_union(tbcmp_cnt[tbcmp_cnt$county == county, ])
-  coastal <- sf::st_intersection(coastal_stratum, cnt_geom)
-  unicoastal <- sf::st_union(sf::st_combine(coastal)) |> sf::st_make_valid()
-
-  # Reservation layers (already within the coastal stratum)
-  nativersrv_out <- sf::st_sf(geometry = fixgeo(nativersrv)) |>
-    dplyr::mutate(cat = 'Reservation Native')
-
-  restorersrv_out <- sf::st_sf(geometry = fixgeo(restorersrv)) |>
-    dplyr::mutate(cat = 'Reservation Restorable')
-
+oppdat_fun <- function(nativelyr, restorelyr) {
   # Existing conservation layers
   nativelyr_exst <- sf::st_sf(
     geometry = nativelyr |> dplyr::filter(typ == 'Existing') |> fixgeo()
@@ -2182,29 +2143,18 @@ oppdat_fun <- function(
   ) |>
     dplyr::mutate(cat = 'Existing Conservation Restorable')
 
-  # Proposed conservation layers: remove coastal stratum overlap to avoid
-  # double-counting with reservation layers
-  nativelyr_prop <- nativelyr |>
-    dplyr::filter(typ == 'Proposed') |>
-    fixgeo() |>
-    sf::st_difference(unicoastal) |>
-    fixgeo()
-  nativelyr_prop <- sf::st_sf(geometry = nativelyr_prop) |>
-    dplyr::mutate(cat = 'Proposed Conservation Native') |>
-    sf::st_make_valid()
+  # Proposed conservation layers
+  nativelyr_prop <- sf::st_sf(
+    geometry = nativelyr |> dplyr::filter(typ == 'Proposed') |> fixgeo()
+  ) |>
+    dplyr::mutate(cat = 'Proposed Conservation Native')
 
-  restorelyr_prop <- restorelyr |>
-    dplyr::filter(typ == 'Proposed') |>
-    fixgeo() |>
-    sf::st_difference(unicoastal) |>
-    fixgeo()
-  restorelyr_prop <- sf::st_sf(geometry = restorelyr_prop) |>
-    dplyr::mutate(cat = 'Proposed Conservation Restorable') |>
-    sf::st_make_valid()
+  restorelyr_prop <- sf::st_sf(
+    geometry = restorelyr |> dplyr::filter(typ == 'Proposed') |> fixgeo()
+  ) |>
+    dplyr::mutate(cat = 'Proposed Conservation Restorable')
 
   dplyr::bind_rows(
-    nativersrv_out,
-    restorersrv_out,
     nativelyr_exst,
     nativelyr_prop,
     restorelyr_exst,
@@ -2215,7 +2165,7 @@ oppdat_fun <- function(
 #' Interactive leaflet map of opportunity layers
 #'
 #' Maps the output of \code{oppdat_fun()} using \code{leaflet}, colouring
-#' polygons by the six opportunity categories. The colour palette matches
+#' polygons by the four opportunity categories. The colour palette matches
 #' the ggplot2 static maps from the original hmpu-workflow:
 #'
 #' \itemize{
@@ -2223,8 +2173,6 @@ oppdat_fun <- function(
 #'   \item Existing Conservation Restorable — \code{green4}
 #'   \item Proposed Conservation Native — \code{dodgerblue1}
 #'   \item Proposed Conservation Restorable — \code{dodgerblue4}
-#'   \item Reservation Native — \code{violetred1}
-#'   \item Reservation Restorable — \code{violetred3}
 #' }
 #'
 #' @param oppdat An \code{sf} object as returned by \code{oppdat_fun()}, with
@@ -2240,9 +2188,7 @@ oppmap_leaflet <- function(oppdat, county, tbcmp_cnt, simplify = NULL) {
     'Existing Conservation Native' = 'yellowgreen',
     'Existing Conservation Restorable' = 'green4',
     'Proposed Conservation Native' = 'dodgerblue1',
-    'Proposed Conservation Restorable' = 'dodgerblue4',
-    'Reservation Native' = 'violet',
-    'Reservation Restorable' = 'violetred3'
+    'Proposed Conservation Restorable' = 'dodgerblue4'
   )
   cols <- sapply(
     cols,

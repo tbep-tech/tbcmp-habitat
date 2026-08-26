@@ -8,7 +8,6 @@ source(here('R', 'funcs.R'))
 
 # Load shared inputs
 load(here('data', '01_inputs', 'tbcmp_cnt.RData'))
-load(here('data', '01_inputs', 'coastal_stratum.RData'))
 
 out_dir <- here('data', '04_opportunities_maps')
 
@@ -29,33 +28,16 @@ for (county in tbcmp_cnt$county) {
     '02_current_layers',
     paste0('restorelyr_', county_lower, '.RData')
   ))
-  load(here(
-    'data',
-    '02_current_layers',
-    paste0('nativersrv_', county_lower, '.RData')
-  ))
-  load(here(
-    'data',
-    '02_current_layers',
-    paste0('restorersrv_', county_lower, '.RData')
-  ))
 
   nativelyr <- get(paste0('nativelyr_', county_lower))
   restorelyr <- get(paste0('restorelyr_', county_lower))
-  nativersrv <- get(paste0('nativersrv_', county_lower))
-  restorersrv <- get(paste0('restorersrv_', county_lower))
 
   obj_name <- paste0('oppmap_', county_lower)
   assign(
     obj_name,
     oppdat_fun(
-      nativersrv = nativersrv,
-      restorersrv = restorersrv,
       nativelyr = nativelyr,
-      restorelyr = restorelyr,
-      coastal_stratum = coastal_stratum,
-      tbcmp_cnt = tbcmp_cnt,
-      county = county
+      restorelyr = restorelyr
     )
   )
 
@@ -91,4 +73,4 @@ zip::zip(
 # view map
 load(here('data', '04_opportunities_maps', 'oppmap_pinellas.RData'))
 
-oppmap_leaflet(oppmap_pinellas)
+oppmap_leaflet(oppmap_pinellas, county = 'Pinellas', tbcmp_cnt = tbcmp_cnt)

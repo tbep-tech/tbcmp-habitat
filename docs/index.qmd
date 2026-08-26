@@ -10,10 +10,8 @@ Opportunity areas for each county can be downloaded [here](https://github.com/tb
 |---|---|
 | Existing Conservation Native | Native habitat within existing conservation lands |
 | Existing Conservation Restorable | Restorable land within existing conservation lands |
-| Proposed Conservation Native | Native habitat within proposed conservation lands, outside the coastal stratum |
-| Proposed Conservation Restorable | Restorable land within proposed conservation lands, outside the coastal stratum |
-| Reservation Native | Native habitat in the coastal stratum that is unprotected or proposed for conservation |
-| Reservation Restorable | Restorable land in the coastal stratum that is unprotected or proposed for conservation |
+| Proposed Conservation Native | Native habitat within proposed conservation lands |
+| Proposed Conservation Restorable | Restorable land within proposed conservation lands |
 <br>
 
 Restoration potentials for each county can be downloaded [here](https://github.com/tbep-tech/tbcmp-opportunities/raw/refs/heads/main/data/05_restoration_maps/restmap_shp.zip) and are defined as follows:

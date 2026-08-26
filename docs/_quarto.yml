@@ -3,10 +3,10 @@ project:
   output-dir: _book
 
 book:
-  title: "TBCMP Opportunity Analysis"
+  title: "TBCMP Habitats"
   author: "Tampa Bay Estuary Program"
   date: today
-  repo-url: https://github.com/tbep-tech/tbcmp-opportunities
+  repo-url: https://github.com/tbep-tech/tbcmp-habitat
   repo-actions: [source]
   chapters:
     - index.qmd

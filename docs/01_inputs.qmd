@@ -6,7 +6,7 @@ This step creates the spatial input layers used in the opportunity analysis. All
 
 ## Coastal Stratum
 
-The coastal stratum defines the zone of interest for reservation space or those areas most vulnerable to sea level rise. It represents the land area between Mean Lower Low Water (MLLW) and 5 feet (1.524 m) NAVD88 most likely to be impacted by sea level rise.
+The coastal stratum represents the land area between Mean Lower Low Water (MLLW) and 5 feet (1.524 m) NAVD88 most likely to be impacted by sea level rise.  The layer is used to distinguish wetlands as freshwater or tidal and to identify coastal uplands.  The layer is also used to define the reservation space for the Tampa Bay Habitat Master Plan [@tbep0514]. This category was reclassified into one of the other four opportunity categories.
 
 The delineation follows three main steps:
 

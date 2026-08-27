@@ -2162,11 +2162,64 @@ oppdat_fun <- function(nativelyr, restorelyr) {
   )
 }
 
+#' Split opportunity categories by vulnerability overlap
+#'
+#' Splits each opportunity category in \code{oppdat} (output of
+#' \code{oppdat_fun()}) into a vulnerable and non-vulnerable portion based on
+#' overlap with a vulnerability hot spot polygon (e.g. \code{vuln_max_<county>},
+#' cells with vulnerability at or above a threshold). The overlapping portion
+#' is relabelled with a \code{", vulnerable"} suffix; the remaining
+#' (non-overlapping) portion keeps the original category label. This turns the
+#' four base opportunity categories into up to eight:
+#'
+#' \itemize{
+#'   \item \code{Existing Conservation Native}
+#'   \item \code{Existing Conservation Native, vulnerable}
+#'   \item \code{Existing Conservation Restorable}
+#'   \item \code{Existing Conservation Restorable, vulnerable}
+#'   \item \code{Proposed Conservation Native}
+#'   \item \code{Proposed Conservation Native, vulnerable}
+#'   \item \code{Proposed Conservation Restorable}
+#'   \item \code{Proposed Conservation Restorable, vulnerable}
+#' }
+#'
+#' @param oppdat  \code{sf}. Output of \code{oppdat_fun()}, with a \code{cat}
+#'   column identifying the base opportunity category.
+#' @param vulndat \code{sf} or \code{sfc}. Vulnerability hot spot polygon
+#'   (e.g. \code{vuln_max_<county>}).
+#'
+#' @return An \code{sf} POLYGON object with a single \code{cat} column with up
+#'   to eight category values (four original, four with a \code{", vulnerable"}
+#'   suffix).
+
+oppdat_vuln_fun <- function(oppdat, vulndat) {
+  vuln_union <- sf::st_union(vulndat) |> sf::st_make_valid()
+
+  cats <- unique(oppdat$cat)
+
+  purrr::map_dfr(cats, function(cat_nm) {
+    cat_geom <- oppdat |>
+      dplyr::filter(cat == cat_nm) |>
+      fixgeo()
+
+    vulnerable <- sf::st_intersection(cat_geom, vuln_union) |> fixgeo()
+    notvuln <- sf::st_difference(cat_geom, vuln_union) |> fixgeo()
+
+    dplyr::bind_rows(
+      sf::st_sf(geometry = vulnerable) |>
+        dplyr::mutate(cat = paste0(cat_nm, ', vulnerable')),
+      sf::st_sf(geometry = notvuln) |>
+        dplyr::mutate(cat = cat_nm)
+    )
+  })
+}
+
 #' Interactive leaflet map of opportunity layers
 #'
-#' Maps the output of \code{oppdat_fun()} using \code{leaflet}, colouring
-#' polygons by the four opportunity categories. The colour palette matches
-#' the ggplot2 static maps from the original hmpu-workflow:
+#' Maps the output of \code{oppdat_fun()} or \code{oppdat_vuln_fun()} using
+#' \code{leaflet}, colouring polygons by opportunity category. The colour
+#' palette matches the ggplot2 static maps from the original hmpu-workflow,
+#' keyed by the base (non-suffixed) category name:
 #'
 #' \itemize{
 #'   \item Existing Conservation Native — \code{yellowgreen}
@@ -2175,8 +2228,17 @@ oppdat_fun <- function(nativelyr, restorelyr) {
 #'   \item Proposed Conservation Restorable — \code{dodgerblue4}
 #' }
 #'
-#' @param oppdat An \code{sf} object as returned by \code{oppdat_fun()}, with
-#'   a \code{cat} column identifying the opportunity category.
+#' When \code{oppdat} includes the \code{", vulnerable"}-suffixed categories
+#' produced by \code{oppdat_vuln_fun()}, the vulnerable portion of each
+#' category is filled with the solid base colour, and the non-vulnerable
+#' portion is filled with a diagonal-hatch SVG pattern in the same colour
+#' (the pattern \code{<defs>} are injected into the map via
+#' \code{htmlwidgets::onRender()}). The legend swatches always show the solid
+#' base colour; the solid/hatched convention is noted in the legend title.
+#'
+#' @param oppdat An \code{sf} object as returned by \code{oppdat_fun()} or
+#'   \code{oppdat_vuln_fun()}, with a \code{cat} column identifying the
+#'   opportunity category.
 #' @param county Character. County name.
 #' @param tbcmp_cnt \code{sf} polygon with one row per county and a \code{county}
 #' @param simplify Numeric. Optional tolerance for geometry simplification via \code{sf::st_simplify()} to speed up rendering. Units are in the layer's CRS (e.g., meters for a projected CRS).
@@ -2207,18 +2269,52 @@ oppmap_leaflet <- function(oppdat, county, tbcmp_cnt, simplify = NULL) {
   tbcmp_cnt_4326 <- sf::st_transform(tbcmp_cnt, 4326) |>
     dplyr::filter(county == !!county)
 
+  base_cat <- function(cat_nm) sub(', vulnerable$', '', cat_nm)
+  is_vulnerable <- function(cat_nm) grepl(', vulnerable$', cat_nm)
+
+  pattern_ids <- stats::setNames(
+    paste0('hatch', seq_along(cols)),
+    names(cols)
+  )
+  pattern_defs <- paste(
+    mapply(
+      function(id, hex) {
+        sprintf(
+          '<pattern id="%s" width="6" height="6" patternTransform="rotate(45)" patternUnits="userSpaceOnUse"><line x1="0" y1="0" x2="0" y2="6" style="stroke:%s; stroke-width:3" /></pattern>',
+          id,
+          hex
+        )
+      },
+      pattern_ids,
+      cols
+    ),
+    collapse = ''
+  )
+
+  ordered_cats <- unlist(lapply(
+    names(cols),
+    function(b) c(b, paste0(b, ', vulnerable'))
+  ))
+  present_cats <- ordered_cats[ordered_cats %in% unique(oppdat_4326$cat)]
+
   m <- leaflet::leaflet() |>
     leaflet::addProviderTiles(leaflet::providers$Esri.WorldGrayCanvas)
 
-  for (cat_nm in names(cols)) {
+  for (cat_nm in present_cats) {
     cat_data <- dplyr::filter(oppdat_4326, cat == cat_nm)
     if (nrow(cat_data) == 0) {
       next
     }
+    b <- base_cat(cat_nm)
+    fill <- if (is_vulnerable(cat_nm)) {
+      unname(cols[[b]])
+    } else {
+      paste0('url(#', pattern_ids[[b]], ')')
+    }
     m <- leaflet::addPolygons(
       m,
       data = cat_data,
-      fillColor = cols[[cat_nm]],
+      fillColor = fill,
       fillOpacity = 0.7,
       color = NA,
       weight = 0,
@@ -2227,7 +2323,18 @@ oppmap_leaflet <- function(oppdat, county, tbcmp_cnt, simplify = NULL) {
     )
   }
 
-  present_cats <- names(cols)[names(cols) %in% unique(oppdat_4326$cat)]
+  m <- m |>
+    htmlwidgets::onRender(sprintf(
+      "function(el, x) {
+        var svg = el.querySelector('svg');
+        if (svg) {
+          var defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+          defs.innerHTML = %s;
+          svg.insertBefore(defs, svg.firstChild);
+        }
+      }",
+      jsonlite::toJSON(pattern_defs, auto_unbox = TRUE)
+    ))
 
   m |>
     leaflet::addPolygons(
@@ -2242,7 +2349,22 @@ oppmap_leaflet <- function(oppdat, county, tbcmp_cnt, simplify = NULL) {
       options = leaflet::layersControlOptions(collapsed = FALSE)
     ) |>
     leaflet::addLegend(
-      colors = unname(cols[present_cats]),
+      colors = vapply(
+        present_cats,
+        function(cat_nm) {
+          hex <- unname(cols[[base_cat(cat_nm)]])
+          if (is_vulnerable(cat_nm)) {
+            hex
+          } else {
+            sprintf(
+              'repeating-linear-gradient(45deg, white, white 3px, %s 3px, %s 6px)',
+              hex,
+              hex
+            )
+          }
+        },
+        character(1)
+      ),
       labels = present_cats,
       title = 'Opportunity',
       position = 'bottomright'

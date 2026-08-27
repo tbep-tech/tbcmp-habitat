@@ -397,3 +397,44 @@ The combined layer is then clipped to each county boundary by `clip_seagrass()`,
 |---|---|
 | `fetch_seagrass()` | Read and combine both SWFWMD seagrass shapefiles; returns a single `sf` object |
 | `clip_seagrass(seagrass_all, tbcmp_cnt, county)` | Clip the combined layer to one county boundary; returns an `sf` object |
+
+## Vulnerability
+
+The vulnerability layer identifies areas of significant projected coastal habitat change, described as a "hot spot" of vulnerability to sea level rise. It is produced by the Habitat Evolution Model (HEM) workflow in the [`tbcmp-analyze`](https://github.com/tbep-tech/tbcmp-analyze) repository, documented at <https://tbep-tech.github.io/tbcmp-analyze/hem-workflow.html>. This section covers how that raster is processed in this repository.
+
+### Source Data
+
+The HEM projects habitat type for the seven-county study area under several sea level rise scenarios: three target years (2050, 2080, 2100), two land-development policies (Protect Developed and Allow Migration), and low/high marsh accretion assumptions. A geospatial hot spot analysis is then run across all scenario outputs to identify statistically significant clusters of habitat loss ("hot spots").  These produced separate rasters for existing vulnerability and projected future change, each summarized across scenarios as mean, median, and max.
+
+This repository uses the max-aggregated, combined existing/future product:
+
+```
+T:/05_GIS/TBEP/TBCMP/GIS_MAPS/HABITAT_VULNERABILITY/tbcmp_hot_spot_maps_1-2_max.tif
+```
+
+The file is copied to `data-raw/01_inputs/tbcmp_hot_spot_maps_1-2_max.tif` (10 m resolution, EPSG:3087). Cell values are a unitless vulnerability index in the range 0–1, with higher values indicating greater projected habitat vulnerability.
+
+### Processing
+
+For each county, the raster is cropped and masked to the county boundary.  Cells greater than or equal to 0.45 are retained as vulnerable locations, which are vectorized into a single dissolved polygon.
+
+### Output
+
+| Field | Value |
+|---|---|
+| `vuln_thresh` | `0.45` (the applied threshold) |
+| `crs` | `EPSG:3087` |
+
+Each county produces a separate RData file:
+
+| File | Object |
+|---|---|
+| `data/01_inputs/vuln_max_citrus.RData` | `vuln_max_citrus` |
+| `data/01_inputs/vuln_max_hernando.RData` | `vuln_max_hernando` |
+| `data/01_inputs/vuln_max_hillsborough.RData` | `vuln_max_hillsborough` |
+| `data/01_inputs/vuln_max_manatee.RData` | `vuln_max_manatee` |
+| `data/01_inputs/vuln_max_pasco.RData` | `vuln_max_pasco` |
+| `data/01_inputs/vuln_max_pinellas.RData` | `vuln_max_pinellas` |
+| `data/01_inputs/vuln_max_sarasota.RData` | `vuln_max_sarasota` |
+
+This layer is used in Step 4 to split each opportunity category into vulnerable and non-vulnerable portions (see [Opportunity Maps](04_opportunities_maps.qmd)).

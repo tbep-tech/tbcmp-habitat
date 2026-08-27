@@ -28,17 +28,25 @@ for (county in tbcmp_cnt$county) {
     '02_current_layers',
     paste0('restorelyr_', county_lower, '.RData')
   ))
+  load(here(
+    'data',
+    '01_inputs',
+    paste0('vuln_max_', county_lower, '.RData')
+  ))
 
   nativelyr <- get(paste0('nativelyr_', county_lower))
   restorelyr <- get(paste0('restorelyr_', county_lower))
+  vulndat <- get(paste0('vuln_max_', county_lower))
+
+  oppdat <- oppdat_fun(
+    nativelyr = nativelyr,
+    restorelyr = restorelyr
+  )
 
   obj_name <- paste0('oppmap_', county_lower)
   assign(
     obj_name,
-    oppdat_fun(
-      nativelyr = nativelyr,
-      restorelyr = restorelyr
-    )
+    oppdat_vuln_fun(oppdat, vulndat)
   )
 
   # Save as RData

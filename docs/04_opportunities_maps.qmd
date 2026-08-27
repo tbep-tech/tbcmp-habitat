@@ -6,14 +6,18 @@ This step builds spatial layers that characterize conservation opportunity areas
 
 ## Overview
 
-For each county, a single `sf` object is produced that combines four opportunity categories into one layer with a `cat` column:
+For each county, a single `sf` object is produced that combines eight opportunity categories into one layer with a `cat` column: the four base categories (Existing Conservation Native, Existing Conservation Restorable, Proposed Conservation Native, Proposed Conservation Restorable), and a `", vulnerable"` suffix identifying the portion that overlaps a vulnerability hot spot layer.
 
 | Category | Description |
 |---|---|
-| Existing Conservation Native | Native habitat within existing conservation lands |
-| Existing Conservation Restorable | Restorable land within existing conservation lands |
-| Proposed Conservation Native | Native habitat within proposed conservation lands |
-| Proposed Conservation Restorable | Restorable land within proposed conservation lands |
+| Existing Conservation Native | Native habitat within existing conservation lands, not in a vulnerability hot spot |
+| Existing Conservation Native, vulnerable | Native habitat within existing conservation lands, within a vulnerability hot spot |
+| Existing Conservation Restorable | Restorable land within existing conservation lands, not in a vulnerability hot spot |
+| Existing Conservation Restorable, vulnerable | Restorable land within existing conservation lands, within a vulnerability hot spot |
+| Proposed Conservation Native | Native habitat within proposed conservation lands, not in a vulnerability hot spot |
+| Proposed Conservation Native, vulnerable | Native habitat within proposed conservation lands, within a vulnerability hot spot |
+| Proposed Conservation Restorable | Restorable land within proposed conservation lands, not in a vulnerability hot spot |
+| Proposed Conservation Restorable, vulnerable | Restorable land within proposed conservation lands, within a vulnerability hot spot |
 
 ## Input Layers
 
@@ -23,29 +27,33 @@ One county-wide shared layer is loaded at the start of the script:
 |---|---|---|
 | `tbcmp_cnt` | `data/01_inputs/tbcmp_cnt.RData` | Seven-county boundary polygons |
 
-Two county-specific layers are loaded inside the loop for each county:
+Three county-specific layers are loaded inside the loop for each county:
 
 | Object | File | Description |
 |---|---|---|
 | `nativelyr_<county>` | `data/02_current_layers/nativelyr_<county>.RData` | Native habitats in conservation lands |
 | `restorelyr_<county>` | `data/02_current_layers/restorelyr_<county>.RData` | Restorable lands in conservation |
+| `vuln_max_<county>` | `data/01_inputs/vuln_max_<county>.RData` | Vulnerability hot spot polygon (cells at or above the vulnerability threshold) |
 
 ## County Processing Loop
 
 The script loops over all seven counties in `tbcmp_cnt`. For each county:
 
-1. Load the two county-specific layers from `data/02_current_layers/`
-2. Call `oppdat_fun()` to produce the combined opportunity `sf` object
-3. Save the result as `oppmap_<county>.RData` and `oppmap_<county>.shp` in `data/04_opportunities_maps/`
+1. Load the three county-specific layers from `data/02_current_layers/` and `data/01_inputs/`
+2. Call `oppdat_fun()` to produce the four-category opportunity `sf` object
+3. Call `oppdat_vuln_fun()` to split each category by overlap with the vulnerability layer, producing the eight-category `sf` object
+4. Save the result as `oppmap_<county>.RData` and `oppmap_<county>.shp` in `data/04_opportunities_maps/`
 
 ## Opportunity Layer Assembly
 
-`oppdat_fun()` assembles the four opportunity categories directly from `nativelyr` and `restorelyr`:
+`oppdat_fun()` assembles the four base opportunity categories directly from `nativelyr` and `restorelyr`:
 
 - **Existing Conservation Native** and **Existing Conservation Restorable**: Features filtered to `typ == "Existing"` from `nativelyr` and `restorelyr` respectively.
 - **Proposed Conservation Native** and **Proposed Conservation Restorable**: Features filtered to `typ == "Proposed"` from `nativelyr` and `restorelyr` respectively.
 
 All four layers are combined with `dplyr::bind_rows()` into a single `sf` object with a `cat` column.
+
+`oppdat_vuln_fun()` then splits each of the four categories by overlap with the vulnerability polygon (`vulndat`). The portion intersecting the vulnerability layer is relabelled with a `", vulnerable"` suffix, and the remaining (non-overlapping) portion keeps the original category label.
 
 `fixgeo()` is applied at each stage to resolve topology errors before any spatial operations.
 
@@ -55,7 +63,7 @@ All output files are written to `data/04_opportunities_maps/`. Each county produ
 
 | File | Description |
 |---|---|
-| `oppmap_<county>.RData` | `sf` object with `cat` column (four opportunity categories) |
+| `oppmap_<county>.RData` | `sf` object with `cat` column (eight opportunity categories) |
 | `oppmap_<county>.shp` | Shapefile equivalent of the same layer |
 
 | County | RData file |
@@ -70,7 +78,7 @@ All output files are written to `data/04_opportunities_maps/`. Each county produ
 
 ## Mapping
 
-`oppmap_leaflet()` is a separate function that accepts the spatial output from `oppdat_fun()` and produces an interactive `leaflet` map. It is not called in `04_opportunity_maps.R` but is available for use in downstream analysis. The four opportunity categories use fixed colours for display:
+`oppmap_leaflet()` is a separate function that accepts the spatial output from `oppdat_vuln_fun()` and produces an interactive `leaflet` map. It is not called in `04_opportunity_maps.R` but is available for use in downstream analysis. The four base categories use fixed colours for display, applied to both the vulnerable and non-vulnerable variant of each:
 
 | Category | Colour |
 |---|---|
@@ -79,9 +87,12 @@ All output files are written to `data/04_opportunities_maps/`. Each county produ
 | Proposed Conservation Native | `dodgerblue1` |
 | Proposed Conservation Restorable | `dodgerblue4` |
 
+The vulnerable portion of each category is rendered as a solid fill in that colour and the non-vulnerable portion is rendered with a diagonal-hatch pattern in the same colour. The hatch patterns are injected into the map's SVG via `htmlwidgets::onRender()`.
+
 ## Key Functions
 
 | Function | Purpose |
 |---|---|
-| `oppdat_fun()` | Assemble the four opportunity categories from `nativelyr`/`restorelyr`, return combined `sf` |
-| `oppmap_leaflet()` | Format `oppdat_fun()` output into an interactive `leaflet` map for display |
+| `oppdat_fun()` | Assemble the four base opportunity categories from `nativelyr`/`restorelyr`, return combined `sf` |
+| `oppdat_vuln_fun()` | Split each opportunity category by overlap with a vulnerability polygon into vulnerable/non-vulnerable portions, return combined `sf` with up to eight categories |
+| `oppmap_leaflet()` | Format `oppdat_vuln_fun()` output into an interactive `leaflet` map, with solid fill for vulnerable areas and hatched fill for non-vulnerable areas |

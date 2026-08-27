@@ -4,7 +4,7 @@ This document describes the methods used to create updated spatial layers for th
 
 Methods are reproduced from the Tampa Bay Estuary Program 2020 Habitat Master Plan update described in @tbep0720 and @tbep0223. All processing is implemented in numbered R scripts, described sequentially in the [Steps](01_inputs.html) sections. All source code is available at <https://github.com/tbep-tech/tbcmp-habitat>. Original code for the Habitat Master Plan is available at <https://github.com/tbep-tech/hmpu-workflow>.  [Claude Code](https://code.claude.com/docs/en/overview) was used extensively to adapt the original code herein, with all resulting products and documentation verified by a real human. 
 
-The methods herein differ from those in the original [tbcmp-opportunity](https://github.com/tbep-tech/tbcmp-opportunity) repository in two significant ways.  First, the reservation space within the five-foot contour is removed and combined with the other four core opportunity categories.  Second, output from the HEM analyses ([tbcmp-analyze](https://github.com/tbep-tech/tbcmp-analyze)) that identify habitats most vulnerable to sea level rise are combined with these new opportunity layers. 
+The methods herein differ from those in the original [tbcmp-opportunities](https://github.com/tbep-tech/tbcmp-opportunities) repository in two significant ways.  First, the reservation space within the five-foot contour is removed and combined with the other four core opportunity categories.  Second, output from the HEM analyses ([tbcmp-analyze](https://github.com/tbep-tech/tbcmp-analyze)) that identify habitats most vulnerable to sea level rise are combined with these new opportunity layers. 
 
 Opportunity areas for each county can be downloaded [here](https://github.com/tbep-tech/tbcmp-habitat/raw/refs/heads/main/data/04_opportunities_maps/oppmap_shp.zip) and are defined as follows:
 
@@ -19,15 +19,15 @@ Opportunity areas for each county can be downloaded [here](https://github.com/tb
 | Proposed Conservation Restorable | Restorable land within proposed conservation lands, not in a vulnerability hot spot |
 | Proposed Conservation Restorable, vulnerable | Restorable land within proposed conservation lands, within a vulnerability hot spot |
 
-A proposed weighting scheme for the each of these eight layers for informing priority areas within the broader Tampa Bay Coastal Master Plan is as follows.  This weighting prioritizes vulnerable > non-vulnerable and proposed > existing.  Native or restorable areas are treated similarly within this scheme. In other words, native or restorable habitats that are at greatest risk of loss from sea level rise and that are not currently protected are given the highest priority.
+A proposed weighting scheme for the each of these eight layers for informing priority areas within the broader Tampa Bay Coastal Master Plan is as follows.  This weighting prioritizes vulnerable > non-vulnerable (mean weighting, 0.85, 0.45, respectively), proposed > existing (mean weighting 0.75, 0.55, respectively), and native > restorable (mean weighting 0.7, 0.6, respectively), nested in that order.  In other words, native habitats that are at greatest risk of loss from sea level rise and that are not currently protected are given the highest priority.
 
 | Category | Weight |
 |---|---|
 | Existing Conservation Native | 0.4 |
 | Existing Conservation Native, vulnerable | 0.8 |
-| Existing Conservation Restorable | 0.4 |
-| Existing Conservation Restorable, vulnerable | 0.8 |
+| Existing Conservation Restorable | 0.3 |
+| Existing Conservation Restorable, vulnerable | 0.7 |
 | Proposed Conservation Native | 0.6 |
 | Proposed Conservation Native, vulnerable | 1.0 |
-| Proposed Conservation Restorable | 0.6 |
-| Proposed Conservation Restorable, vulnerable | 1.0 |
+| Proposed Conservation Restorable | 0.5 |
+| Proposed Conservation Restorable, vulnerable | 0.9 |

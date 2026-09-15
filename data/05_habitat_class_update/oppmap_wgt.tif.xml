@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata xml:lang="en"><Esri><CreaDate>20260915</CreaDate><CreaTime>17324800</CreaTime><ArcGISFormat>1.0</ArcGISFormat><SyncOnce>TRUE</SyncOnce><DataProperties><lineage><Process ToolSource="c:\program files (x86)\arcgis\desktop10.7\ArcToolbox\Toolboxes\Data Management Tools.tbx\CalculateStatistics" Date="20260915" Time="173248">CalculateStatistics D:\rprojects\tbcmp-habitat\data\05_habitat_class_update\oppmap_wgt.tif 1 1 # OVERWRITE "Feature Set"</Process></lineage></DataProperties></Esri></metadata>

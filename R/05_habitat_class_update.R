@@ -7,6 +7,33 @@ library(here)
 
 source(here('R', 'funcs.R'))
 
+# keep only the polygonal parts of a layer, one feature per input row
+# st_intersection() and st_difference() return GEOMETRYCOLLECTION where an
+# edge is shared with the clipping geometry, which the shapefile driver
+# rejects. st_collection_extract() alone would split every feature into its
+# component polygons, so the parts are recombined per row.
+polyonly <- function(dat) {
+  geo <- st_geometry(dat)
+  iscol <- st_geometry_type(geo) == 'GEOMETRYCOLLECTION'
+
+  if (any(iscol)) {
+    geo[iscol] <- st_sfc(
+      lapply(geo[iscol], function(g) {
+        p <- st_collection_extract(st_sfc(g), 'POLYGON')
+        if (length(p) == 0) {
+          return(st_multipolygon())
+        }
+        st_combine(p)[[1]]
+      }),
+      crs = st_crs(geo)
+    )
+  }
+
+  st_geometry(dat) <- st_cast(geo, 'MULTIPOLYGON')
+
+  dat[!st_is_empty(st_geometry(dat)), ]
+}
+
 in_dir <- here('data', '04_opportunities_maps')
 out_dir <- here('data', '05_habitat_class_update')
 dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
@@ -172,6 +199,7 @@ land_all <- st_sf(cat = land_all$cat, geometry = st_geometry(land_all))
 noopp <- land_all |>
   st_difference(st_union(st_geometry(oppmap_wgt))) |>
   st_make_valid() |>
+  polyonly() |>
   left_join(devwgts, by = 'cat') |>
   mutate(wgtinv = 1 - wgt)
 noopp <- st_sf(st_drop_geometry(noopp), geometry = st_geometry(noopp))
@@ -217,12 +245,13 @@ for (county in tbcmp_cnt$county) {
     filter(county == !!county) |>
     st_geometry()
 
+  # geometry collections along the county boundary are reduced to polygons
   assign(
     obj_name,
     oppmap_wgt |>
       st_intersection(cnt_geom) |>
       st_make_valid() |>
-      filter(!st_is_empty(geometry))
+      polyonly()
   )
 
   save(

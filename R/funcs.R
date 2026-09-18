@@ -2380,8 +2380,27 @@ oppmap_leaflet <- function(oppdat, county, tbcmp_cnt, simplify = NULL) {
 #'
 #' @return a leaflet map with one layer per category, shaded by weight
 wgtmap_leaflet <- function(wgtdat, county, tbcmp_cnt, simplify = NULL) {
+  # the developed classes are large multipolygons with many holes, which
+  # Douglas-Peucker simplification can break ("unable to assign hole to a
+  # shell"), so topology is preserved and the result is repaired. If GEOS
+  # still fails the map is drawn from the unsimplified layer rather than
+  # stopping the render
   if (!is.null(simplify)) {
-    wgtdat <- sf::st_simplify(wgtdat, dTolerance = simplify)
+    simp <- try(
+      sf::st_make_valid(
+        sf::st_simplify(
+          sf::st_make_valid(wgtdat),
+          preserveTopology = TRUE,
+          dTolerance = simplify
+        )
+      ),
+      silent = TRUE
+    )
+    if (inherits(simp, 'try-error')) {
+      warning('simplify failed, mapping unsimplified geometry', call. = FALSE)
+    } else {
+      wgtdat <- simp
+    }
   }
 
   wgtdat <- wgtdat[!sf::st_is_empty(wgtdat), ]

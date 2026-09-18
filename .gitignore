@@ -1,6 +1,8 @@
 data-raw/01_inputs/fnai/CLIP_v4_02.zip
-data/05_habitat_class_update/oppmap_wgtinv.dbf
-data/05_habitat_class_update/oppmap_wgtinv.prj
-data/05_habitat_class_update/oppmap_wgtinv.shp
-data/05_habitat_class_update/oppmap_wgtinv.shx
+data/05_habitat_class_update/*.dbf
+data/05_habitat_class_update/*.prj
+data/05_habitat_class_update/*.shp
+data/05_habitat_class_update/*.shx
+data/05_habitat_class_update/*.cpg
+docs/_book/
 .Rproj.user

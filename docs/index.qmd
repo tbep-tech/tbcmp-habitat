@@ -40,4 +40,4 @@ A fifth step, described in [Weighted Opportunity Map](05_habitat_class_update.ht
 | Some Opportunity | Soft developed land, including pasture, row crops, groves, mined and reclaimed land, golf courses, and open land | 0.2 |
 | Little Opportunity | Hard developed land, including residential, commercial, industrial, and transportation land uses | 0.0 |
 
-The result is a single layer, and a matching 10 m raster aligned to the HEM vulnerability grid, in which every land area in the seven counties carries a weight.
+The result is a single layer, and a matching 10 m raster aligned to the HEM vulnerability grid, in which every land area in the seven counties carries a weight.  County subsets of this weighted layer are shown in the [County Weighted Maps](oppwgt_citrus.html) sections and can be downloaded [here](https://github.com/tbep-tech/tbcmp-habitat/raw/refs/heads/main/data/05_habitat_class_update/oppmap_wgt_shp.zip).

@@ -20,6 +20,15 @@ book:
         - oppmap_pasco.qmd
         - oppmap_pinellas.qmd
         - oppmap_sarasota.qmd
+    - part: "County Weighted Maps"
+      chapters:
+        - oppwgt_citrus.qmd
+        - oppwgt_hernando.qmd
+        - oppwgt_hillsborough.qmd
+        - oppwgt_manatee.qmd
+        - oppwgt_pasco.qmd
+        - oppwgt_pinellas.qmd
+        - oppwgt_sarasota.qmd
     - part: "Steps"
       chapters:
         - 01_inputs.qmd

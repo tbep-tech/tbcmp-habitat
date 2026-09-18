@@ -89,6 +89,9 @@ All output files are written to `data/05_habitat_class_update/`.
 | `oppmap_wgt.RData` | Region-wide layer dissolved by category, eight opportunity categories plus the three developed classes |
 | `oppmap_wgt.shp` | Shapefile equivalent of the same layer |
 | `oppmap_wgt.tif` | Weight raster, 10 m, masked to land |
+| `oppmap_wgt_<county>.RData` | County subset of the weighted layer, used for display in the County Weighted Maps sections |
+| `oppmap_wgt_<county>.shp` | Shapefile equivalent of each county subset |
+| `oppmap_wgt_shp.zip` | All shapefiles from this step in one archive |
 
 ## Key Objects
 
@@ -98,3 +101,7 @@ All output files are written to `data/05_habitat_class_update/`.
 | `devwgts` | Lookup of the three developed and unconserved classes and their weights |
 | `land_all` | Land footprint for the seven counties, classified into the three developed classes |
 | `oppmap_wgt` | Final region-wide weighted layer covering all land |
+
+## Mapping
+
+`wgtmap_leaflet()` in `R/funcs.R` accepts a county subset of the weighted layer and produces an interactive `leaflet` map. Each category is drawn as its own toggleable layer, shaded on a continuous ramp from its weight. The ramp is fixed to the zero to one range rather than the range present in each county, so shading is comparable across the seven maps. It is used in the County Weighted Maps sections.

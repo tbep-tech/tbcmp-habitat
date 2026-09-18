@@ -207,7 +207,51 @@ st_write(
   delete_layer = TRUE
 )
 
-message('  Saved oppmap_all, oppmap_wgt')
+# county subsets of the weighted layer for display
+for (county in tbcmp_cnt$county) {
+  county_lower <- tolower(county)
+  obj_name <- paste0('oppmap_wgt_', county_lower)
+  message('  County subset: ', county)
+
+  cnt_geom <- tbcmp_cnt |>
+    filter(county == !!county) |>
+    st_geometry()
+
+  assign(
+    obj_name,
+    oppmap_wgt |>
+      st_intersection(cnt_geom) |>
+      st_make_valid() |>
+      filter(!st_is_empty(geometry))
+  )
+
+  save(
+    list = obj_name,
+    file = file.path(out_dir, paste0(obj_name, '.RData')),
+    compress = 'xz'
+  )
+  st_write(
+    get(obj_name),
+    file.path(out_dir, paste0(obj_name, '.shp')),
+    delete_layer = TRUE
+  )
+
+  rm(list = obj_name)
+}
+
+# save all shapefiles in a single zipped folder called oppmap_wgt_shp
+shp_files <- list.files(
+  out_dir,
+  pattern = '\\.(shp|dbf|shx|prj|cpg|sbn|sbx|xml)$',
+  full.names = TRUE
+)
+zip::zip(
+  zipfile = file.path(out_dir, 'oppmap_wgt_shp.zip'),
+  files = shp_files,
+  mode = 'cherry-pick'
+)
+
+message('  Saved oppmap_all, oppmap_wgt, county subsets')
 
 # rasterize land-only surfaces --------------------------------------------
 

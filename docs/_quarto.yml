@@ -26,6 +26,7 @@ book:
         - 02_current_layers.qmd
         - 03_current_summaries.qmd
         - 04_opportunities_maps.qmd
+        - 05_habitat_class_update.qmd
 
 bibliography: refs.bib
 link-citations: true

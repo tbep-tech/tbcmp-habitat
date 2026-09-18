@@ -1,0 +1,100 @@
+---
+title: "Weighted Opportunity Map"
+---
+
+This step combines the seven county opportunity layers into a single region-wide layer, applies the weighting scheme to each opportunity category, and extends the layer to cover all remaining land in the seven counties. All processing is executed in `R/05_habitat_class_update.R`.
+
+## Overview
+
+The county layers from [Opportunity Maps](04_opportunities_maps.html) are combined into one `sf` object and each of the eight categories in the `cat` column is assigned its weight. The combined layer covers only conservation lands, so the land outside those categories is added as three additional classes describing how much opportunity remains on developed and unconserved land. The result is a single layer covering all land in the seven counties, where every feature carries a weight.
+
+## Input Layers
+
+| Object | File | Description |
+|---|---|---|
+| `oppmap_<county>` | `data/04_opportunities_maps/oppmap_<county>.RData` | Eight-category opportunity layer for each of the seven counties |
+| `lulc_<county>` | `data/01_inputs/lulc_<county>.RData` | County land use / land cover, used to define the land footprint and classify developed land |
+| `fluccs` | `data/01_inputs/fluccs.RData` | FLUCCS lookup from `data-raw/01_inputs/FLUCCShabsclass.csv`, provides `HMPU_GROUP` |
+| `tbcmp_cnt` | `data/01_inputs/tbcmp_cnt.RData` | Seven-county boundary polygons |
+
+## Combining County Layers
+
+All `oppmap_*.RData` files in `data/04_opportunities_maps/` are loaded and combined with `dplyr::bind_rows()`. A `county` column is added from each file name so county-level summaries remain possible after the merge. The combined object is dissolved by category with `dplyr::group_by()` and `dplyr::summarise()` to give one feature per opportunity category across the region.
+
+## Weights
+
+Weights are joined to the `cat` column from the scheme described in the [Overview](index.html). The join is verified before processing continues: if any category in the combined layer has no matching weight, the script stops rather than carrying `NA` values forward.
+
+| Category | Weight |
+|---|---|
+| Existing Conservation Native | 0.4 |
+| Existing Conservation Native, vulnerable | 0.8 |
+| Existing Conservation Restorable | 0.3 |
+| Existing Conservation Restorable, vulnerable | 0.7 |
+| Proposed Conservation Native | 0.6 |
+| Proposed Conservation Native, vulnerable | 1.0 |
+| Proposed Conservation Restorable | 0.5 |
+| Proposed Conservation Restorable, vulnerable | 0.9 |
+
+## Land Footprint
+
+The land footprint is assembled from the county LULC layers. Two groups of FLUCCS codes are removed so that only land remains:
+
+- Estuarine and marine subtidal codes, matching the treatment in `lulc_est()` in `R/funcs.R`: bays and estuaries, major water bodies, the Gulf, tidal flats, oyster bars, submerged sand, seagrasses, attached algae, and hardbottom.
+- Freshwater open water, taken as all codes with `HMPU_GROUP == "Open Water"` in the FLUCCS lookup, so lakes, reservoirs, and streams are not carried through as developed land.
+
+Intertidal habitats such as mangroves, salt barrens, and salt marshes are retained as land.
+
+## Developed and Unconserved Land
+
+The eight opportunity categories are erased from the land footprint with `sf::st_difference()`. The remainder is land that falls outside existing and proposed conservation, and it is classified using `HMPU_GROUP` from the FLUCCS lookup:
+
+| Class | HMPU_GROUP | Description |
+|---|---|---|
+| Moderate Opportunity | Native | Native habitat outside existing and proposed conservation lands |
+| Some Opportunity | Restorable | Soft developed land retaining restoration potential, including pasture, row crops, groves, mined and reclaimed land, golf courses, and open land |
+| Little Opportunity | Developed | Hard developed land, including residential, commercial, industrial, and transportation land uses |
+
+Any FLUCCS code absent from the lookup falls through to Little Opportunity.
+
+Proposed weights for the three classes are set below the 0.3 minimum of the opportunity categories, so that no land outside conservation can outrank land within it. These values are provisional and can be adjusted in the `devwgts` table at the top of the script.
+
+| Class | Weight |
+|---|---|
+| Moderate Opportunity | 0.25 |
+| Some Opportunity | 0.2 |
+| Little Opportunity | 0.0 |
+
+The three classes account for the following land area across the seven counties. The first column is total land in each class and the second is the portion remaining after the opportunity categories are erased. Areas are approximate.
+
+| Class | Total land (ac) | Outside opportunity categories (ac) | Share of remainder |
+|---|---|---|---|
+| Moderate Opportunity | 1,060,547 | 125,845 | 8.5% |
+| Some Opportunity | 729,739 | 322,619 | 21.9% |
+| Little Opportunity | 1,027,478 | 1,027,478 | 69.6% |
+
+Roughly 88% of native habitat and 56% of restorable land in the seven counties already falls within the opportunity categories. Unconserved native habitat is concentrated in Hillsborough (45,745 ac) and Pasco (41,801 ac), which together hold about 70% of that class.
+
+## Rasters
+
+The weighted layer is rasterized to the 10 m grid of the HEM vulnerability hot spot raster (`data-raw/01_inputs/tbcmp_hot_spot_maps_1-2_max.tif`), so outputs align cell for cell with the [tbcmp-analyze](https://github.com/tbep-tech/tbcmp-analyze) products. The raster is masked to the land footprint, leaving open water as `NA`. Because the weighted layer covers all land, cells with no assigned weight occur only as slivers at the land boundary and are filled with zero.
+
+## Output Files
+
+All output files are written to `data/05_habitat_class_update/`.
+
+| File | Description |
+|---|---|
+| `oppmap_all.RData` | All seven county opportunity layers combined, with `county`, `cat`, and weight columns |
+| `oppmap_wgt.RData` | Region-wide layer dissolved by category, eight opportunity categories plus the three developed classes |
+| `oppmap_wgt.shp` | Shapefile equivalent of the same layer |
+| `oppmap_wgt.tif` | Weight raster, 10 m, masked to land |
+
+## Key Objects
+
+| Object | Purpose |
+|---|---|
+| `wgts` | Lookup of the eight opportunity categories and their weights |
+| `devwgts` | Lookup of the three developed and unconserved classes and their weights |
+| `land_all` | Land footprint for the seven counties, classified into the three developed classes |
+| `oppmap_wgt` | Final region-wide weighted layer covering all land |

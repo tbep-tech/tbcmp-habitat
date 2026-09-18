@@ -28,16 +28,18 @@ wgts <- tribble(
 
 # weights for land outside the eight opportunity categories, partitioned by
 # development intensity from the FLUCCS lookup (data-raw/01_inputs/
-# FLUCCShabsclass.csv). Soft developed land (HMPU_GROUP 'Restorable', e.g.
-# pasture, row crops, groves, mined and reclaimed land, golf courses, open
-# land) retains restoration potential; hard developed land (all remaining
-# non-opportunity land) retains little. Values are placeholders below the
+# FLUCCShabsclass.csv). Native land outside existing and proposed
+# conservation (HMPU_GROUP 'Native') is undeveloped habitat and retains the
+# most potential; soft developed land (HMPU_GROUP 'Restorable', e.g. pasture,
+# row crops, groves, mined and reclaimed land, golf courses, open land)
+# retains some; hard developed land (HMPU_GROUP 'Developed' and any code
+# absent from the lookup) retains little. Values are placeholders below the
 # 0.3 minimum of the opportunity categories, adjust as needed.
 devwgts <- tribble(
-  ~cat,                 ~wgt,
+  ~cat,                   ~wgt,
   'Moderate Opportunity', 0.25,
-  'Some Opportunity',   0.2,
-  'Little Opportunity', 0.1
+  'Some Opportunity',     0.2,
+  'Little Opportunity',   0.0
 )
 
 # subtidal FLUCCS codes defining non-land areas, consistent with lulc_est()
@@ -75,9 +77,9 @@ oppmap_all <- fls |>
     obj_name <- tools::file_path_sans_ext(basename(fl))
     county_lower <- gsub('^oppmap_', '', obj_name)
     message('  Loading ', obj_name)
-    
+
     load(fl)
-    
+
     get(obj_name) |>
       mutate(county = str_to_title(county_lower))
   }) |>
@@ -98,25 +100,25 @@ if (length(chk) > 0) {
   stop('Categories with no assigned weight: ', paste(chk, collapse = ', '))
 }
 
-# inverse weight layer ---------------------------------------------------
+# weighted layer ---------------------------------------------------------
 
-# inverse as the complement on the unit scale, i.e., a cost-style surface
-# where the highest priority category (Proposed Conservation Native,
+# inverse weight as the complement on the unit scale, i.e., a cost-style
+# surface where the highest priority category (Proposed Conservation Native,
 # vulnerable) takes the lowest value
 # use wgtinv = 1 / wgt instead for a reciprocal inverse
 oppmap_all <- oppmap_all |>
   mutate(wgtinv = 1 - wgt)
 
 # new region-wide layer dissolved across counties by category, carrying the
-# inverse weights
-oppmap_wgtinv <- oppmap_all |>
+# weights and their inverse
+oppmap_wgt <- oppmap_all |>
   group_by(cat, wgt, wgtinv) |>
   summarise(.groups = 'drop') |>
   st_make_valid() |>
   arrange(wgtinv)
-oppmap_wgtinv <- st_sf(
-  st_drop_geometry(oppmap_wgtinv),
-  geometry = st_geometry(oppmap_wgtinv)
+oppmap_wgt <- st_sf(
+  st_drop_geometry(oppmap_wgt),
+  geometry = st_geometry(oppmap_wgt)
 )
 
 # developed land classes ------------------------------------------------
@@ -141,9 +143,9 @@ land_all <- tbcmp_cnt$county |>
   map(function(county) {
     county_lower <- tolower(county)
     message('  Land footprint: ', county)
-    
+
     load(here('data', '01_inputs', paste0('lulc_', county_lower, '.RData')))
-    
+
     dat <- get(paste0('lulc_', county_lower)) |>
       mutate(FLUCCSCODE = as.integer(FLUCCSCODE)) |>
       filter(!FLUCCSCODE %in% watcds) |>
@@ -157,7 +159,7 @@ land_all <- tbcmp_cnt$county |>
       ) |>
       group_by(cat) |>
       summarise(.groups = 'drop')
-    
+
     st_sf(cat = dat$cat, geometry = st_geometry(dat))
   }) |>
   bind_rows() |>
@@ -166,15 +168,22 @@ land_all <- tbcmp_cnt$county |>
   st_make_valid()
 land_all <- st_sf(cat = land_all$cat, geometry = st_geometry(land_all))
 
-# land outside the eight opportunity categories, retained as two features
+# land outside the eight opportunity categories, retained as three features
 noopp <- land_all |>
-  st_difference(st_union(st_geometry(oppmap_wgtinv))) |>
+  st_difference(st_union(st_geometry(oppmap_wgt))) |>
   st_make_valid() |>
   left_join(devwgts, by = 'cat') |>
   mutate(wgtinv = 1 - wgt)
 noopp <- st_sf(st_drop_geometry(noopp), geometry = st_geometry(noopp))
 
-oppmap_wgtinv <- bind_rows(oppmap_wgtinv, noopp) |>
+# acreage of each class outside the opportunity categories
+noopp |>
+  mutate(acres = as.numeric(st_area(geometry)) / 4046.86) |>
+  st_drop_geometry() |>
+  select(cat, wgt, wgtinv, acres) |>
+  print()
+
+oppmap_wgt <- bind_rows(oppmap_wgt, noopp) |>
   arrange(wgtinv)
 
 # save -------------------------------------------------------------------
@@ -186,19 +195,19 @@ save(
   compress = 'xz'
 )
 
-# inverse weight layer
+# region-wide weighted layer
 save(
-  oppmap_wgtinv,
-  file = file.path(out_dir, 'oppmap_wgtinv.RData'),
+  oppmap_wgt,
+  file = file.path(out_dir, 'oppmap_wgt.RData'),
   compress = 'xz'
 )
 st_write(
-  oppmap_wgtinv,
-  file.path(out_dir, 'oppmap_wgtinv.shp'),
+  oppmap_wgt,
+  file.path(out_dir, 'oppmap_wgt.shp'),
   delete_layer = TRUE
 )
 
-message('  Saved oppmap_all, oppmap_wgtinv')
+message('  Saved oppmap_all, oppmap_wgt')
 
 # rasterize land-only surfaces --------------------------------------------
 
@@ -208,7 +217,7 @@ message('  Saved oppmap_all, oppmap_wgtinv')
 vuln_max <- rast(
   here('data-raw', '01_inputs', 'tbcmp_hot_spot_maps_1-2_max.tif')
 )
-oppmap_vect <- vect(oppmap_wgtinv)
+oppmap_vect <- vect(oppmap_wgt)
 stopifnot(same.crs(vuln_max, oppmap_vect))
 template <- rast(vuln_max) |>
   extend(ext(oppmap_vect))
@@ -221,20 +230,6 @@ landrst <- rasterize(vect(st_geometry(land_all)), template, field = 1)
 # Opportunity features the vector layer now covers all land, so the fills
 # (zero for the weight surface, one for the inverse surface, consistent with
 # wgtinv = 1 - wgt) only catch edge slivers from raster/vector misalignment
-oppmap_wgt_rst <- rasterize(oppmap_vect, template, field = 'wgt') |>
-  subst(NA, 0) |>
-  mask(landrst)
-names(oppmap_wgt_rst) <- 'wgt'
-
-oppmap_wgtinv_rst <- rasterize(oppmap_vect, template, field = 'wgtinv') |>
-  subst(NA, 1) |>
-  mask(landrst)
-names(oppmap_wgtinv_rst) <- 'wgtinv'
-
-# weight and inverse weight rasters, masked to land portions only (non-land
-# cells remain NA via the land mask); null land areas are filled with zero
-# for the weight surface and one for the inverse surface, consistent with
-# wgtinv = 1 - wgt
 oppmap_wgt_rst <- rasterize(oppmap_vect, template, field = 'wgt') |>
   subst(NA, 0) |>
   mask(landrst)
@@ -260,7 +255,6 @@ message('  Saved oppmap_wgt.tif, oppmap_wgtinv.tif')
 
 # view map ---------------------------------------------------------------
 
-plot(oppmap_wgtinv['wgt'], border = NA, main = 'Current weight')
-plot(oppmap_wgtinv['wgtinv'], border = NA, main = 'Inverse weight')
+plot(oppmap_wgt['wgt'], border = NA, main = 'Weight')
 plot(oppmap_wgt_rst, main = 'Weight (land only)')
 plot(oppmap_wgtinv_rst, main = 'Inverse weight (land only)')

@@ -1,6 +1,6 @@
 # Pasco {.unnumbered}
 
-Download zipped file [here](https://github.com/tbep-tech/tbcmp-habitat/raw/refs/heads/main/data/05_habitat_class_update/oppmap_wgt_pasco.zip).
+Download zipped file [here](https://github.com/tbep-tech/tbcmp-habitat/blob/main/data/05_habitat_class_update/oppmap_wgt_pasco.zip).
 
 ```{r}
 #| include: false

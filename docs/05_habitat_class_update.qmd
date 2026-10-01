@@ -27,14 +27,15 @@ Weights are joined to the `cat` column from the scheme described in the [Overvie
 
 | Category | Weight |
 |---|---|
-| Existing Conservation Native | 0.4 |
-| Existing Conservation Native, vulnerable | 0.8 |
 | Existing Conservation Restorable | 0.3 |
-| Existing Conservation Restorable, vulnerable | 0.7 |
-| Proposed Conservation Native | 0.6 |
-| Proposed Conservation Native, vulnerable | 1.0 |
+| Existing Conservation Native | 0.4 |
 | Proposed Conservation Restorable | 0.5 |
+| Proposed Conservation Native | 0.6 |
+| Existing Conservation Restorable, vulnerable | 0.7 |
+| Existing Conservation Native, vulnerable | 0.8 |
 | Proposed Conservation Restorable, vulnerable | 0.9 |
+| Proposed Conservation Native, vulnerable | 1.0 |
+
 
 ## Land Footprint
 
@@ -91,6 +92,7 @@ All output files are written to `data/05_habitat_class_update/`.
 | `oppmap_wgt.tif` | Weight raster, 10 m, masked to land |
 | `oppmap_wgt_<county>.RData` | County subset of the weighted layer, used for display in the County Weighted Maps sections |
 | `oppmap_wgt_<county>.shp` | Shapefile equivalent of each county subset |
+| `oppmap_wgt_<county>.zip` | Zipped shapefile equivalents of each county subset |
 | `oppmap_wgt_shp.zip` | All shapefiles from this step in one archive |
 
 ## Key Objects

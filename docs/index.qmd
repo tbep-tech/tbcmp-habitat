@@ -23,14 +23,14 @@ A proposed weighting scheme for the each of these eight layers for informing pri
 
 | Category | Weight |
 |---|---|
-| Existing Conservation Native | 0.4 |
-| Existing Conservation Native, vulnerable | 0.8 |
 | Existing Conservation Restorable | 0.3 |
-| Existing Conservation Restorable, vulnerable | 0.7 |
-| Proposed Conservation Native | 0.6 |
-| Proposed Conservation Native, vulnerable | 1.0 |
+| Existing Conservation Native | 0.4 |
 | Proposed Conservation Restorable | 0.5 |
+| Proposed Conservation Native | 0.6 |
+| Existing Conservation Restorable, vulnerable | 0.7 |
+| Existing Conservation Native, vulnerable | 0.8 |
 | Proposed Conservation Restorable, vulnerable | 0.9 |
+| Proposed Conservation Native, vulnerable | 1.0 |
 
 A fifth step, described in [Weighted Opportunity Map](05_habitat_class_update.html), applies this weighting scheme to the county opportunity layers and combines them into a single region-wide layer.  The eight categories above describe conservation lands only, so this step also extends the layer to the remaining land in the seven counties.  Land outside existing and proposed conservation is classified using the `HMPU_GROUP` field of the FLUCCS lookup, distinguishing native habitat that is not currently in a conservation category from soft and hard developed land.  Proposed weights for these three classes fall below the 0.3 minimum of the eight categories above, so that no land outside conservation outranks land within it.
 
